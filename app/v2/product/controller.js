@@ -1,6 +1,7 @@
 const path = require("path");
 const fs = require("fs");
 const Product = require("./model");
+const { where } = require("sequelize");
 
 const getProduct = async (req, res, next) => {
   try {
@@ -13,11 +14,12 @@ const getProduct = async (req, res, next) => {
 
 const getOneProducts = async (req, res, next) => {
   const { product_id } = req.params;
-  try {
-    const result = await Product.findOne({ product_id });
-    res.send(result);
-  } catch (error) {
-    res.send(error);
+  const find = await Product.findOne({ where: { product_id } });
+
+  if (find) {
+    res.send(find.dataValues);
+  } else {
+    res.send(`id ${product_id} tidak ditemukan`);
   }
 };
 
@@ -25,35 +27,43 @@ const updateProduct = async (req, res, next) => {
   const { product_id } = req.params;
   const { name, price, stock, status } = req.body;
   const image = req.file;
-  const findData = await Product.findOne({ product_id });
+  const findData = await Product.findOne({ where: { product_id } });
+
+  if (!findData) {
+    return res.send(`id ${product_id} tidak ditemukan`);
+  }
 
   if (image) {
     const target = path.join(__dirname, "../../../uploads", image.originalname);
     fs.renameSync(image.path, target);
-
     try {
-      const result = findData.set({
-        product_id,
-        name,
-        price,
-        stock,
-        status,
-        image: `http://localhost:3000/public/${image.originalname}`,
-      });
-      res.send(result);
+      await findData.update(
+        {
+          product_id,
+          name,
+          price,
+          stock,
+          status,
+          image: `http://localhost:3000/public/${image.originalname}`,
+        },
+        findData
+      );
+      res.send(`Data berhasil diubah`);
     } catch (error) {
       res.send(error);
     }
   } else {
     try {
-      const result = findData.set({
-        product_id,
-        name,
-        price,
-        stock,
-        status,
-      });
-      res.send(result);
+      findData.update(
+        {
+          name,
+          price,
+          stock,
+          status,
+        },
+        findData
+      );
+      res.send(`Data berhasil diubah`);
     } catch (error) {
       res.send(error);
     }
@@ -90,11 +100,9 @@ const createProduct = async (req, res, next) => {
 
 const deleteProduct = async (req, res, next) => {
   const { product_id } = req.params;
-
-  console.log(product_id);
   try {
     const find = await Product.findOne({ product_id });
-    console.log(find);
+    console.log(product_id, "===", find.dataValues.product_id);
     const result = await find.destroy();
     res.send(result);
   } catch (error) {
