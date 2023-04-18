@@ -6,9 +6,12 @@ const { where } = require("sequelize");
 const getProduct = async (req, res, next) => {
   try {
     const result = await Product.findAll();
-    res.send(result);
+    return res.status(200).send({
+      status: "success",
+      data: result,
+    });
   } catch (error) {
-    res.send(error);
+    next(error);
   }
 };
 
@@ -17,9 +20,15 @@ const getOneProducts = async (req, res, next) => {
   const find = await Product.findOne({ where: { product_id } });
 
   if (find) {
-    res.send(find.dataValues);
+    return res.status(200).send({
+      status: "success",
+      data: find.dataValues,
+    });
   } else {
-    res.send(`id ${product_id} tidak ditemukan`);
+    return res.status(400).send({
+      status: "failed",
+      message: `id ${product_id} tidak ditemukan`,
+    });
   }
 };
 
@@ -30,7 +39,11 @@ const updateProduct = async (req, res, next) => {
   const findData = await Product.findOne({ where: { product_id } });
 
   if (!findData) {
-    return res.send(`id ${product_id} tidak ditemukan`);
+    res.status(400);
+    return res.send({
+      status: "failed",
+      message: `id ${product_id} tidak ditemukan`,
+    });
   }
 
   if (image) {
@@ -48,13 +61,16 @@ const updateProduct = async (req, res, next) => {
         },
         findData
       );
-      res.send(`Data berhasil diubah`);
+      res.status(200).send({
+        status: "success",
+        message: `Data berhasil diubah`,
+      });
     } catch (error) {
-      res.send(error);
+      next(error);
     }
   } else {
     try {
-      findData.update(
+      await findData.update(
         {
           name,
           price,
@@ -63,9 +79,12 @@ const updateProduct = async (req, res, next) => {
         },
         findData
       );
-      res.send(`Data berhasil diubah`);
+      res.status(200).send({
+        status: "success",
+        message: `Data dengan id ${product_id} berhasil diubah`,
+      });
     } catch (error) {
-      res.send(error);
+      next(error);
     }
   }
 };
@@ -74,7 +93,14 @@ const createProduct = async (req, res, next) => {
   const { product_id, name, price, stock, status } = req.body;
   const image = req.file;
 
-  console.log(product_id, name, price, stock, status, "image", image);
+  const findData = await Product.findOne({ where: { product_id } });
+
+  if (findData) {
+    return res.status(400).send({
+      status: "failed",
+      message: `Product dengan id ${product_id} sudah ada`,
+    });
+  }
 
   if (image) {
     const target = path.join(__dirname, "../../../uploads", image.originalname);
@@ -89,24 +115,40 @@ const createProduct = async (req, res, next) => {
         status,
         image: `http://localhost:3000/public/${image.originalname}`,
       });
-      res.send(result);
+      res.status(201).send({
+        status: "success",
+        data: result,
+      });
     } catch (error) {
-      res.send(error);
+      next(error);
     }
   } else {
-    throw new Error("Image harus diisi");
+    res.status(400).send({
+      status: "failed",
+      message: "Image wajib di upload",
+    });
   }
 };
 
 const deleteProduct = async (req, res, next) => {
   const { product_id } = req.params;
+  const find = await Product.findOne({ where: { product_id } });
+
+  if (!find) {
+    return res.status(400).send({
+      status: "failed",
+      message: `id ${product_id} tidak ditemukan`,
+    });
+  }
+
   try {
-    const find = await Product.findOne({ product_id });
-    console.log(product_id, "===", find.dataValues.product_id);
-    const result = await find.destroy();
-    res.send(result);
+    await find.destroy();
+    return res.status(200).send({
+      status: "success",
+      message: "Data berhasil di hapus",
+    });
   } catch (error) {
-    res.send(error);
+    next(error);
   }
 };
 
