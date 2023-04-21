@@ -96,7 +96,7 @@ const deleteProduct = async (req, res, next) => {
       });
     }
 
-    const result = await Product.deleteOne();
+    const result = await Product.findOneAndDelete({ _id: id });
     res.status(200).send({
       status: "success",
       data: result,

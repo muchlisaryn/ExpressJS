@@ -1,4 +1,5 @@
 require("./config/mongoose");
+const cors = require("cors");
 const expres = require("express");
 const path = require("path");
 const app = expres();
@@ -8,6 +9,7 @@ const app = expres();
 const productRouterV4 = require("./app/v4/product/router");
 const logger = require("morgan");
 
+app.use(cors());
 app.use(logger("dev"));
 app.use(expres.json());
 app.use(expres.urlencoded({ extended: true }));
