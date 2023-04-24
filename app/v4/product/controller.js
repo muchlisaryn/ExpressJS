@@ -53,6 +53,7 @@ const createProduct = async (req, res, next) => {
 const updateProduct = async (req, res, next) => {
   const { id } = req.params;
   const { name, price, stock, status } = req.body;
+  const statusProduct = stock === 0 ? false : status;
 
   try {
     const findData = await Product.findOne({ _id: id });
@@ -70,7 +71,7 @@ const updateProduct = async (req, res, next) => {
         name,
         price,
         stock,
-        status: stock === 0 ? false : status,
+        status: statusProduct,
       },
       { new: true, runValidators: true }
     );
